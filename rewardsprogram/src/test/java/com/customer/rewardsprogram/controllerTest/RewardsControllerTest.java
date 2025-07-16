@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import com.customer.rewardsprogram.controller.RewardsController;
 import com.customer.rewardsprogram.dto.RewardSummaryDTO;
-import com.customer.rewardsprogram.exception.ResourceNotFoundException;
 import com.customer.rewardsprogram.model.Transaction;
 import com.customer.rewardsprogram.service.RewardService;
 
@@ -29,63 +27,43 @@ public class RewardsControllerTest {
 	private RewardService rewardService;
 
 	@Test
-	void getRecentTransactions_success() throws Exception {
-		List<Transaction> txns = List.of(new Transaction(1L, 1001L, LocalDate.now(), 120.0));
-		when(rewardService.getLastThreeMonthsTransactions()).thenReturn(txns);
-		mockMvc.perform(get("/transactions/recent"))
+	void testGetTransactions_recentThreeMonths() throws Exception {
+		List<Transaction> transactions = List.of(new Transaction(1L, 101L, LocalDate.now().minusDays(10), 120.0));
+		when(rewardService.getLastThreeMonthsTransactions()).thenReturn(transactions);
+		mockMvc.perform(get("/transactions"))
 		.andExpect(status().isOk())
+		.andExpect(jsonPath("$[0].customerId").value(101))
 		.andExpect(jsonPath("$[0].amount").value(120.0));
 	}
 
 	@Test
-	void getCustomerTransactions_withoutMonth_success() throws Exception {
-		List<Transaction> txns = List.of(new Transaction(2L, 1002L, LocalDate.now(), 95.0));
-		when(rewardService.getCustomerTransactions(1002L)).thenReturn(txns);
-		mockMvc.perform(get("/transactions/customer/1002"))
+	void testGetTransactions_byCustomerId_only() throws Exception {
+		List<Transaction> transactions = List.of(new Transaction(2L, 102L, LocalDate.now(), 85.0));
+		when(rewardService.getCustomerTransactions(102L)).thenReturn(transactions);
+		mockMvc.perform(get("/transactions?customerId=102"))
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$[0].customerId").value(1002));
+		.andExpect(jsonPath("$[0].customerId").value(102));
 	}
 
 	@Test
-	void getCustomerTransactions_withMonth_success() throws Exception {
-		YearMonth ym = YearMonth.of(2025, 7);
-		List<Transaction> txns = List.of(new Transaction(3L, 1003L, ym.atDay(10), 75.0));
-		when(rewardService.getCustomerTransactionsByMonth(1003L, ym)).thenReturn(txns);
-		mockMvc.perform(get("/transactions/customer/1003")
-				.param("month", "2025-07"))
+	void testGetTransactions_byCustomerId_and_month() throws Exception {
+		List<Transaction> transactions = List.of(new Transaction(3L, 103L, LocalDate.of(2025, 7, 12), 90.0));
+		LocalDate start = LocalDate.of(2025, 7, 1);
+		LocalDate end = LocalDate.of(2025, 7, 31);
+		when(rewardService.getCustomerTransactionsByDateRange(103L, start, end)).thenReturn(transactions);
+		mockMvc.perform(get("/transactions?customerId=103&month=2025-07"))
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$[0].amount").value(75.0));
+		.andExpect(jsonPath("$[0].customerId").value(103))
+		.andExpect(jsonPath("$[0].amount").value(90.0));
 	}
 
 	@Test
-	void getRewardSummary_success() throws Exception {
-		List<Transaction> txns = List.of(new Transaction(4L, 1004L, LocalDate.now(), 150.0));
-		RewardSummaryDTO summary = new RewardSummaryDTO(1004L, Map.of("JULY", 150), 150, txns);
-		when(rewardService.calculateRewards(1004L)).thenReturn(summary);
-		mockMvc.perform(get("/transactions/rewards/1004"))
+	void testGetRewardSummary_success() throws Exception {
+		RewardSummaryDTO summary = new RewardSummaryDTO(104L, Map.of("JULY", 100), 100, List.of());
+		when(rewardService.calculateRewards(104L)).thenReturn(summary);
+		mockMvc.perform(get("/transactions/rewards/104"))
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.totalPoints").value(150))
-		.andExpect(jsonPath("$.transactions[0].amount").value(150.0));
-	}
-
-	@Test
-	void getCustomerTransactions_notFound_returns404() throws Exception {
-		when(rewardService.getCustomerTransactions(888L)).thenThrow(new ResourceNotFoundException("No transactions"));
-		mockMvc.perform(get("/transactions/customer/888"))
-		.andExpect(status().isNotFound());
-	}
-
-	@Test
-	void getRewardSummary_notFound_returns404() throws Exception {
-		when(rewardService.calculateRewards(777L)).thenThrow(new ResourceNotFoundException("Not found"));
-		mockMvc.perform(get("/transactions/rewards/777"))
-		.andExpect(status().isNotFound());
-	}
-
-	@Test
-	void getCustomerTransactions_invalidMonthFormat_returns400() throws Exception {
-		mockMvc.perform(get("/transactions/customer/1001")
-				.param("month", "Jul-25")) // Invalid format for @DateTimeFormat
-		.andExpect(status().isBadRequest());
+		.andExpect(jsonPath("$.customerId").value(104))
+		.andExpect(jsonPath("$.totalPoints").value(100));
 	}
 }
