@@ -28,8 +28,9 @@ Reward points are calculated based on the amount spent in a transaction. Typical
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/transactions/recent` | Get all transactions from the last 3 months |
-| `GET` | `/transactions/{customerId}`| Get all transactions for a customer. If month is provided, filters by that month. Example : /transactions/customer/101?month=2025-06 |
+| `GET` | `/transactions` | Get all transactions from the last 3 months |
+| `GET` | `/transactions?customerId=101`| Get all transactions for a customer.
+| `GET` | `/transactions?customerId=101&month=2025-06` |  Get Transactions for customer based on customerId and specific month by passing them as optional parameters |
 | `GET` | `/transactions/rewards/{customerId}` | Get rewards (monthly and total points) for a customer |
 
 ##  Technologies Used
@@ -50,7 +51,7 @@ Reward points are calculated based on the amount spent in a transaction. Typical
 
 ##  Sample Json Responses
 
-1.**Endpoint: GET /transactions/recent  **
+1.**Endpoint: GET /transactions **
 ==========================================
 **Response Example:**
 ```[
@@ -68,10 +69,9 @@ Reward points are calculated based on the amount spent in a transaction. Typical
  }
 ]```
 
-2.**Endpoint: GET /transactions/customer/{customerId}**
+2.**Endpoint: GET /transactions?customerId=101**
+GET /transactions?customerId=101&month=2025-06
 =======================================================
-**Request Example:**
-GET /transactions/customer/101?month=2025-06
 **Response Example:**
 [
   {
