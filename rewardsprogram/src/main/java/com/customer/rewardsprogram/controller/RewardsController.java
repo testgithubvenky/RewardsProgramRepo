@@ -1,5 +1,6 @@
 package com.customer.rewardsprogram.controller;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,18 +21,20 @@ public class RewardsController {
 	@Autowired
 	private RewardService rewardService;
 
-	@GetMapping("/recent")
-	public List<Transaction> getRecentTransactions(){		
-		return rewardService.getLastThreeMonthsTransactions();
-	}
-
-	@GetMapping("/customer/{customerId}")
-	public List<Transaction> getCustomerTransactions(@PathVariable Long customerId, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+	@GetMapping
+	public List<Transaction> getTransactions(
+			@RequestParam(required = false) Long customerId,
+			@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month
+			) {
 		if (month != null) {
-			return rewardService.getCustomerTransactionsByMonth(customerId, month);
-		} else {
+			LocalDate startDate = month.atDay(1);
+			LocalDate endDate = month.atEndOfMonth();
+			return rewardService.getCustomerTransactionsByDateRange(customerId, startDate, endDate);
+		}
+		if (customerId != null) {
 			return rewardService.getCustomerTransactions(customerId);
 		}
+		return rewardService.getLastThreeMonthsTransactions();
 	}
 
 	@GetMapping("/rewards/{customerId}")
